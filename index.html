@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Southern Cross Safaris — Park Fees Voucher Automation</title>
+<style>
+  :root{
+    --ink:#0f172a; --muted:#475569; --line:#cbd5e1; --soft:#f1f5f9;
+    --brand:#0b6b3a; --brand-dark:#065f46; --accent:#c2410c;
+    --ok:#16a34a; --warn:#b45309; --danger:#dc2626;
+    --yellow:#fff9c4; --yellow-b:#fde68a;
+  }
+  *{box-sizing:border-box}
+  body{font-family:'Segoe UI',Arial,sans-serif;margin:0;background:#eef2f7;color:var(--ink);font-size:13px}
+  header{background:linear-gradient(135deg,var(--brand),var(--brand-dark));color:#fff;padding:14px 22px;box-shadow:0 2px 6px rgba(0,0,0,.15);position:sticky;top:0;z-index:10}
+  header h1{margin:0;font-size:18px;letter-spacing:.3px}
+  header p{margin:3px 0 0;font-size:12px;opacity:.9}
+  header .tabs{margin-top:8px;display:flex;gap:4px}
+  header .tab{background:rgba(255,255,255,.15);color:#fff;border:0;padding:6px 14px;border-radius:6px 6px 0 0;cursor:pointer;font-size:12px;font-weight:600}
+  header .tab.active{background:#fff;color:var(--brand-dark)}
+  main{max-width:1280px;margin:14px auto;padding:0 14px}
+  .page{display:none}
+  .page.active{display:block}
+
+  /* ===== INPUT PAGE ===== */
+  .grid{display:grid;grid-template-columns:400px 1fr;gap:14px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+  .card h2{margin:0;padding:10px 14px;border-bottom:1px solid var(--line);font-size:13px;background:var(--soft);border-radius:10px 10px 0 0;text-transform:uppercase;letter-spacing:.4px;color:var(--brand-dark)}
+  .card .body{padding:12px 14px}
+  label{display:block;font-size:11px;color:var(--muted);margin:6px 0 3px;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+  input,select,textarea{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;font-size:12.5px;font-family:inherit;background:var(--yellow)}
+  input[readonly]{background:#f1f5f9;color:#334155;font-weight:600}
+  input:focus,select:focus,textarea:focus{outline:2px solid #0b6b3a55;border-color:var(--brand)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .row4{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px}
+  button{background:var(--brand);color:#fff;border:0;padding:8px 14px;border-radius:6px;font-weight:600;cursor:pointer;font-size:12.5px}
+  button.secondary{background:#334155}
+  button.accent{background:var(--accent)}
+  button.danger{background:var(--danger)}
+  button.ghost{background:#fff;color:var(--brand);border:1px solid var(--brand)}
+  button:hover{filter:brightness(1.1)}
+  .btnrow{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+  #entries{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px}
+  .entry{background:#f8fafc;border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin-bottom:6px;font-size:11.5px;position:relative}
+  .entry .del{position:absolute;top:4px;right:6px;background:var(--danger);color:#fff;border:0;border-radius:4px;padding:1px 6px;cursor:pointer;font-size:10.5px}
+  .entry strong{color:var(--brand)}
+  .summary{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:10px;margin-top:10px;font-size:12.5px}
+  .summary .big{font-size:20px;font-weight:700;color:var(--brand)}
+  .rate-hint{font-size:11px;color:var(--muted);margin-top:4px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10.5px;font-weight:600}
+  .badge.high{background:#fee2e2;color:#991b1b}
+  .badge.low{background:#dbeafe;color:#1e40af}
+  .badge.kws{background:#dcfce7;color:#166534}
+  .badge.kaps{background:#fef3c7;color:#854d0e}
+  .badge.kato{background:#e0e7ff;color:#3730a3}
+  .badge.dswt{background:#fce7f3;color:#9d174d}
+  .empty{color:var(--muted);text-align:center;padding:30px;font-style:italic}
+
+  /* Autocomplete */
+  .ac-wrap{position:relative}
+  .ac-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:6px;max-height:180px;overflow-y:auto;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,.1);display:none}
+  .ac-list.show{display:block}
+  .ac-item{padding:6px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--soft)}
+  .ac-item:hover{background:var(--soft)}
+  .ac-item .sub{font-size:10.5px;color:var(--muted)}
+
+  /* ===== VOUCHER (print) ===== */
+  .voucher{background:#fff;padding:22px 24px;border:1px solid var(--line);border-radius:10px;margin-bottom:14px;font-size:11.5px;font-family:Arial,sans-serif}
+  .v-header{text-align:center;border-bottom:2px solid var(--brand);padding-bottom:8px;margin-bottom:10px}
+  .v-header .co{font-size:16px;font-weight:700;color:var(--brand);letter-spacing:.5px}
+  .v-header .addr{font-size:10.5px;color:var(--muted);margin-top:2px}
+  .v-title{background:var(--brand);color:#fff;padding:6px 12px;text-align:center;font-size:14px;font-weight:700;letter-spacing:1px;margin-bottom:2px}
+  .v-sub{background:var(--brand-dark);color:#fff;padding:4px 12px;text-align:center;font-size:12px;font-weight:600}
+  .v-meta{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:10px;font-size:11px;border:1px solid #334155}
+  .v-meta div{padding:4px 8px;border-right:1px solid #334155;border-bottom:1px solid #334155}
+  .v-meta div:nth-child(4n){border-right:0}
+  .v-meta .lbl{font-weight:700;background:#f1f5f9;color:#334155}
+  table.v-tbl{width:100%;border-collapse:collapse;margin-top:10px;font-size:11px}
+  table.v-tbl th,table.v-tbl td{border:1px solid #334155;padding:5px 7px;text-align:left;vertical-align:top}
+  table.v-tbl th{background:var(--brand-dark);color:#fff;font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;text-align:center}
+  table.v-tbl td.num{text-align:right}
+  table.v-tbl td.ctr{text-align:center}
+  table.v-tbl tr.subtotal td{background:#f1f5f9;font-weight:700}
+  table.v-tbl tr.grand td{background:var(--brand);color:#fff;font-weight:700}
+  table.v-tbl tr.nett td{background:#fef3c7;font-weight:700;font-size:12.5px;border:2px solid var(--brand)}
+  .v-unut{margin-top:8px;border:1px solid #334155;padding:6px 8px;font-size:10.5px;display:grid;grid-template-columns:auto 1fr auto 1fr auto 1fr;gap:8px;background:#f8fafc}
+  .v-unut b{color:var(--brand-dark)}
+  .sig{display:grid;grid-template-columns:1fr 1fr 1fr;gap:22px;margin-top:22px;font-size:10.5px}
+  .sig div{border-top:1px solid #334155;padding-top:3px;text-align:center;color:var(--muted)}
+  .sig .role{font-weight:700;color:var(--ink);font-size:11px}
+
+  /* ===== HISTORY PAGE ===== */
+  .hist-table{width:100%;border-collapse:collapse;font-size:12px;background:#fff}
+  .hist-table th,.hist-table td{border:1px solid var(--line);padding:6px 8px;text-align:left}
+  .hist-table th{background:var(--brand-dark);color:#fff;font-weight:600;font-size:11px}
+  .hist-table tr:nth-child(even){background:#f8fafc}
+  .hist-table .act{white-space:nowrap}
+  .hist-table .act button{padding:3px 8px;font-size:11px;margin-right:3px}
+
+  /* ===== RATES PAGE ===== */
+  .rate-table{width:100%;border-collapse:collapse;font-size:12px;background:#fff}
+  .rate-table th,.rate-table td{border:1px solid var(--line);padding:5px 8px;text-align:center}
+  .rate-table th{background:var(--brand-dark);color:#fff;font-weight:600;font-size:11px}
+  .rate-table td.park{text-align:left;font-weight:600}
+  .rate-table tr:nth-child(even){background:#f8fafc}
+  .rate-table input{width:80px;padding:3px 5px;background:var(--yellow);border:1px solid var(--line);border-radius:4px;font-size:11.5px;text-align:right}
+
+  @media print{
+    header,.no-print,.tabs{display:none!important}
+    main{margin:0;padding:0;max-width:none}
+    .voucher{border:0;box-shadow:none;page-break-after:always;margin:0;padding:12mm 14mm}
+    body{background:#fff;font-size:11px}
+    .grid{display:block}
+  }
+  .kbd{background:#f1f5f9;border:1px solid var(--line);border-radius:3px;padding:1px 5px;font-family:monospace;font-size:11px}
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--brand);color:#fff;padding:10px 16px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.2);font-size:12.5px;font-weight:600;z-index:100;display:none}
+  .toast.show{display:block;animation:slideIn .3s}
+  @keyframes slideIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .lock-status{font-size:11px;margin-top:6px}
+  .lock-status .step{display:inline-block;padding:3px 8px;margin-right:4px;border-radius:12px;background:#f1f5f9;color:#64748b}
+  .lock-status .step.done{background:#dcfce7;color:#166534}
+  .lock-status .step.done::before{content:'✓ '}
+</style>
+</head>
+<body>
+<header class="no-print">
+  <h1>Southern Cross Safaris — Park Fees Voucher Automation</h1>
+  <p>Ops prepares → Vincent processes → Shalini approves. All voucher types auto-generated from a single requisition.</p>
+  <div class="tabs">
+    <button class="tab active" onclick="showPage('input')">📝 New Requisition</button>
+    <button class="tab" onclick="showPage('history')">📚 History</button>
+    <button class="tab" onclick="showPage('rates')">💵 Rate Cards</button>
+    <button class="tab" onclick="showPage('clients')">👥 Clients</button>
+    <button class="tab" onclick="showPage('settings')">☁️ Cloud Sync</button>
+  </div>
+  <div id="syncStatus" style="font-size:11px;margin-top:6px;opacity:.9"><span id="syncBadge">🔌 Cloud sync: not configured</span></div>
+</header>
+
+<div class="toast" id="toast"></div>
+
+<main>
+
+<!-- =========== INPUT PAGE =========== -->
+<div class="page active" id="page-input">
+  <div class="grid">
+
+    <!-- LEFT: Input panel -->
+    <aside class="card no-print">
+      <h2>1. Trip Header</h2>
+      <div class="body">
+        <div class="row">
+          <div>
+            <label>Voucher No <span style="color:var(--brand);font-size:10px">(auto)</span></label>
+            <input id="voucherNo" placeholder="PV-2026-0001">
+          </div>
+          <div>
+            <label>Date Prepared</label>
+            <input type="date" id="datePrepared">
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Trip / File Ref</label>
+            <input id="tripRef" placeholder="SCK-2026-XXXX">
+          </div>
+          <div>
+            <label>Ops Consultant</label>
+            <input id="consultant" placeholder="Your name">
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>FX Rate (KES/USD)</label>
+            <input type="number" id="fx" value="129" step="0.01">
+          </div>
+          <div>
+            <label>Payment Method</label>
+            <select id="method">
+              <option>Wire Transfer</option>
+              <option>Cheque</option>
+              <option>Mobile Money (M-Pesa)</option>
+              <option>Cash</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <h2>2. Cheque / Payment Details</h2>
+      <div class="body">
+        <div class="row">
+          <div><label>CHQ NO (USD)</label><input id="chqUsd" placeholder="e.g. USD-04521"></div>
+          <div><label>USD Cheque Amount</label><input type="number" id="chqUsdAmt" step="0.01" value="0"></div>
+        </div>
+        <div class="row">
+          <div><label>CHQ NO (KES)</label><input id="chqKes" placeholder="e.g. KES-08823"></div>
+          <div><label>KES Cheque Amount</label><input type="number" id="chqKesAmt" step="0.01" value="0"></div>
+        </div>
+        <label>LESS: Unutilised Tickets — Card No</label>
+        <input id="unutCard" placeholder="Card No">
+        <div class="row">
+          <div><label>Unutilised KES</label><input type="number" id="unutKes" step="0.01" value="0"></div>
+          <div><label>Unutilised USD</label><input type="number" id="unutUsd" step="0.01" value="0"></div>
+        </div>
+        <div class="row">
+          <div><label>E-Citizen Charges (KES)</label><input type="number" id="ecitKes" step="0.01" value="0"></div>
+          <div><label>Gateway Fees (KES)</label><input type="number" id="gateKes" step="0.01" value="0"></div>
+        </div>
+      </div>
+
+      <h2>3. Add Destination Line</h2>
+      <div class="body">
+        <div class="ac-wrap">
+          <label>Client Name <span style="color:var(--muted);font-size:10px">(type to search saved)</span></label>
+          <input id="client" placeholder="Client / Agent" autocomplete="off">
+          <div class="ac-list" id="clientAc"></div>
+        </div>
+
+        <div class="row">
+          <div><label>Invoice No</label><input id="invoice" placeholder="INV-XXXX"></div>
+          <div><label>Travel Date</label><input type="date" id="travelDate"></div>
+        </div>
+
+        <label>Destination / Park <span id="seasonBadge"></span></label>
+        <select id="park"></select>
+        <div class="rate-hint" id="rateHint"></div>
+
+        <div class="row4">
+          <div><label>Adults (NR)</label><input type="number" id="adults" min="0" value="0"></div>
+          <div><label>Children (NR)</label><input type="number" id="children" min="0" value="0"></div>
+          <div><label>Vehicles</label><input type="number" id="vehicles" min="0" value="0"></div>
+          <div><label>Days</label><input type="number" id="days" min="1" value="1"></div>
+        </div>
+
+        <div class="btnrow">
+          <button onclick="addEntry()">+ Add Line</button>
+          <button class="secondary" onclick="clearEntries()">Clear All Lines</button>
+        </div>
+
+        <div id="entries"></div>
+
+        <div class="summary" id="summary" style="display:none">
+          <div>Grand Total</div>
+          <div class="big" id="totalDisplay">$0 · KES 0</div>
+          <div style="font-size:11px;margin-top:4px;color:var(--muted)">Nett after unutilised: <span id="nettDisplay">$0 · KES 0</span></div>
+        </div>
+
+        <h2 style="border-radius:0;margin-top:14px">4. Approvals</h2>
+        <div style="padding:8px 0">
+          <div class="lock-status">
+            <span class="step" id="stepOps">1. Ops prepared</span>
+            <span class="step" id="stepVin">2. Vincent checked</span>
+            <span class="step" id="stepSha">3. Shalini approved</span>
+          </div>
+          <div class="btnrow">
+            <button class="ghost" onclick="approve('Ops')">Mark Ops Prepared</button>
+            <button class="ghost" onclick="approve('Vincent')">Mark Vincent Checked</button>
+            <button class="ghost" onclick="approve('Shalini')">Mark Shalini Approved</button>
+          </div>
+        </div>
+
+        <div class="btnrow">
+          <button onclick="generate()">🖨️ Generate Vouchers</button>
+          <button class="accent" onclick="window.print()">Print / Save PDF</button>
+          <button class="secondary" onclick="saveToHistory()">💾 Save to History</button>
+          <button class="ghost" onclick="emailApprover()">📧 Email to Shalini</button>
+          <button class="ghost" onclick="newRequisition()">🆕 New Requisition</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- RIGHT: Voucher output -->
+    <section>
+      <div id="output"><div class="card"><div class="empty">
+        Fill the form on the left → click <b>Generate Vouchers</b>.<br><br>
+        Lines are auto-routed to the correct voucher — <span class="badge kws">KWS FLOAT</span> for KWS parks and <span class="badge kaps">KAPS FLOAT A/C</span> for KAPS Greater Mara. If you add both, both vouchers render.<br><br>
+        Then click <b>Save to History</b> to log the transaction, or <b>Print / Save PDF</b> for signatures.
+      </div></div></div>
+    </section>
+  </div>
+</div>
+
+<!-- =========== HISTORY PAGE =========== -->
+<div class="page" id="page-history">
+  <div class="card">
+    <h2>Voucher History <span style="float:right;font-weight:400;text-transform:none">
+      <button class="ghost" onclick="exportCsv()">📥 Export CSV</button>
+      <button class="ghost" onclick="backupJson()">💾 Backup JSON</button>
+      <label class="ghost" style="background:#fff;color:var(--brand);border:1px solid var(--brand);padding:7px 12px;border-radius:6px;font-weight:600;font-size:12.5px;cursor:pointer;display:inline-block">
+        ↥ Restore JSON<input type="file" accept=".json" onchange="restoreJson(event)" style="display:none">
+      </label>
+      <button class="ghost" onclick="clearHistory()">🗑️ Clear All</button>
+    </span></h2>
+    <div class="body">
+      <input id="histSearch" placeholder="🔍 Search by client / voucher no / trip ref…" oninput="renderHistory()" style="max-width:400px;background:#fff">
+      <table class="hist-table" style="margin-top:10px">
+        <thead>
+          <tr><th>Date</th><th>Voucher No</th><th>Type</th><th>Trip Ref</th><th>Client</th><th>Payee</th><th>Total USD</th><th>Total KES</th><th>Approvals</th><th class="act">Actions</th></tr>
+        </thead>
+        <tbody id="histBody"></tbody>
+      </table>
+      <div class="empty" id="histEmpty" style="display:none">No vouchers saved yet. Generate one and click "Save to History".</div>
+    </div>
+  </div>
+</div>
+
+<!-- =========== RATES PAGE =========== -->
+<div class="page" id="page-rates">
+  <div class="card">
+    <h2>Rate Cards — edit inline to update <span style="float:right;font-weight:400;text-transform:none">
+      <button class="ghost" onclick="resetRates()">↩ Reset to defaults</button>
+      <button onclick="saveRates()">💾 Save Changes</button>
+    </span></h2>
+    <div class="body">
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">
+        USD rates loaded from your <b>PARK FEES.xlsx</b>. KES Resident & Vehicle rates are typical published rates — edit to match your current price list. Yellow cells are editable.
+      </div>
+      <table class="rate-table">
+        <thead>
+          <tr><th>Authority</th><th>Destination</th><th>High Adult USD</th><th>High Child USD</th><th>Low Adult USD</th><th>Low Child USD</th><th>Resident KES</th><th>Vehicle KES</th></tr>
+        </thead>
+        <tbody id="rateBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- =========== CLIENTS PAGE =========== -->
+<div class="page" id="page-clients">
+  <div class="card">
+    <h2>Client Database — quick fill on new requisitions <span style="float:right;font-weight:400;text-transform:none">
+      <button class="ghost" onclick="clearClients()">🗑️ Clear All</button>
+    </span></h2>
+    <div class="body">
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:10px">
+        Add clients here (or use "Save to History" — new clients auto-save). Type first letters into the Client Name field on the Requisition tab to auto-complete.
+      </div>
+      <div class="row3" style="max-width:600px;background:#fff">
+        <div><label>Client Name</label><input id="ncName" placeholder="e.g. ABC Travel"></div>
+        <div><label>Default Agent</label><input id="ncAgent" placeholder="Ops staff"></div>
+        <div><label>Notes</label><input id="ncNotes" placeholder="Optional"></div>
+      </div>
+      <button style="margin-top:8px" onclick="addClient()">+ Add Client</button>
+      <table class="hist-table" style="margin-top:14px">
+        <thead><tr><th>Client Name</th><th>Default Agent</th><th>Notes</th><th class="act">Actions</th></tr></thead>
+        <tbody id="clientBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<!-- =========== SETTINGS / CLOUD SYNC PAGE =========== -->
+<div class="page" id="page-settings">
+  <div class="card">
+    <h2>Cloud Sync — Shared History Across Your Team</h2>
+    <div class="body">
+      <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:12px;margin-bottom:14px;font-size:12.5px;line-height:1.55">
+        <b>How it works:</b> A free Google Apps Script backend (running on your Google account) stores every saved voucher in a Google Sheet. All team members with this URL and the same "Sync Key" will see the same history live. No servers, no monthly fees — just your Google account.<br><br>
+        <b>Setup takes ~5 minutes</b> — follow the <b>CLOUD_SYNC_SETUP.md</b> guide included in the package. Once set up, paste the Web App URL below and click <b>Test Connection</b>.
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Apps Script Web App URL</label>
+          <input id="cloudUrl" placeholder="https://script.google.com/macros/s/AKfycb.../exec" style="background:var(--yellow)">
+        </div>
+        <div>
+          <label>Sync Key (any shared password)</label>
+          <input id="cloudKey" placeholder="e.g. SCS-2026-Team-Key" style="background:var(--yellow)">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Sync Mode</label>
+          <select id="cloudMode" style="background:var(--yellow)">
+            <option value="auto">Auto — sync on every save, pull on every load</option>
+            <option value="manual">Manual — only when I click "Sync Now"</option>
+            <option value="off">Off — local only (no cloud)</option>
+          </select>
+        </div>
+        <div>
+          <label>User Name (shown on synced records)</label>
+          <input id="cloudUser" placeholder="e.g. Sheena / Vincent / Ops-Nairobi" style="background:var(--yellow)">
+        </div>
+      </div>
+
+      <div class="btnrow">
+        <button onclick="saveCloudConfig()">💾 Save Settings</button>
+        <button class="ghost" onclick="testCloud()">🔌 Test Connection</button>
+        <button class="ghost" onclick="pullFromCloud()">⬇️ Pull From Cloud</button>
+        <button class="ghost" onclick="pushAllToCloud()">⬆️ Push All To Cloud</button>
+      </div>
+
+      <div id="cloudLog" style="margin-top:12px;padding:10px;background:#0f172a;color:#a7f3d0;border-radius:6px;font-family:monospace;font-size:11.5px;max-height:200px;overflow-y:auto;white-space:pre-wrap"></div>
+
+      <h2 style="border-radius:0;margin-top:18px">Quick Setup Steps</h2>
+      <div style="padding:8px 0;font-size:12.5px;line-height:1.7">
+        <ol style="padding-left:20px">
+          <li>Open <a href="https://script.google.com" target="_blank"><b>script.google.com</b></a> — sign in with the Google account that will "own" the shared history</li>
+          <li>Click <b>New project</b> → paste the contents of <b>cloud_backend.gs</b> (from the deployment package) into Code.gs</li>
+          <li>Click <b>Deploy → New deployment → Web app</b> → set <b>Execute as: Me</b> and <b>Who has access: Anyone</b> → click Deploy</li>
+          <li>Copy the <b>Web app URL</b> (ends with <code>/exec</code>) — paste it above ↑</li>
+          <li>Pick a shared <b>Sync Key</b> — share the URL + key with Vincent, Ops team, whoever needs access</li>
+          <li>Click <b>Save Settings</b>, then <b>Test Connection</b> — green tick means you're done</li>
+        </ol>
+        <div style="color:var(--muted);font-size:11.5px;margin-top:8px">Full step-by-step with screenshots in <b>CLOUD_SYNC_SETUP.md</b>.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ==============================================================
+// RATE SCHEDULE — expanded, editable, per PARK FEES.xlsx + PDF
+// ==============================================================
+const DEFAULT_RATES = [
+  {auth:'KATO', name:'Mara Triangle',                 highA:200, highC:50, lowA:100, lowC:50, kesRes:1500, veh:500},
+  {auth:'KATO', name:'Samburu County',                highA:85,  highC:50, lowA:85,  lowC:50, kesRes:800,  veh:500},
+  {auth:'KATO', name:'Isiolo County',                 highA:70,  highC:40, lowA:70,  lowC:40, kesRes:700,  veh:500},
+  {auth:'KAPS', name:'Greater Mara',                  highA:200, highC:50, lowA:100, lowC:50, kesRes:3000, veh:500},
+  {auth:'KWS',  name:'Amboseli N. Park',              highA:90,  highC:45, lowA:90,  lowC:45, kesRes:860,  veh:1500},
+  {auth:'KWS',  name:'L. Nakuru N. Park',             highA:90,  highC:45, lowA:90,  lowC:45, kesRes:860,  veh:1500},
+  {auth:'KWS',  name:'Nairobi N. Park',               highA:80,  highC:40, lowA:80,  lowC:40, kesRes:430,  veh:500},
+  {auth:'KWS',  name:'Tsavo East N. Park',            highA:80,  highC:40, lowA:80,  lowC:40, kesRes:515,  veh:1000},
+  {auth:'KWS',  name:'Tsavo West N. Park',            highA:80,  highC:40, lowA:80,  lowC:40, kesRes:515,  veh:1000},
+  {auth:'KWS',  name:'Meru N. Park',                  highA:70,  highC:40, lowA:70,  lowC:40, kesRes:430,  veh:1000},
+  {auth:'KWS',  name:'Kora N. Park',                  highA:70,  highC:40, lowA:70,  lowC:40, kesRes:430,  veh:1000},
+  {auth:'KWS',  name:'Aberdare N. Park',              highA:70,  highC:40, lowA:70,  lowC:40, kesRes:430,  veh:1000},
+  {auth:'KWS',  name:'Mt. Kenya N. Park',             highA:70,  highC:35, lowA:70,  lowC:35, kesRes:430,  veh:1000},
+  {auth:'KWS',  name:'Hells Gate N. Park',            highA:50,  highC:25, lowA:50,  lowC:25, kesRes:300,  veh:500},
+  {auth:'KWS',  name:'Mt. Longonot N. Park',          highA:50,  highC:25, lowA:50,  lowC:25, kesRes:300,  veh:500},
+  {auth:'KWS',  name:'Mt. Elgon N. Park',             highA:50,  highC:25, lowA:50,  lowC:25, kesRes:300,  veh:500},
+  {auth:'KWS',  name:'Ol Donyo Sabuk N. Park',        highA:50,  highC:25, lowA:50,  lowC:25, kesRes:300,  veh:500},
+  {auth:'KWS',  name:'Shimba Hills N. Reserve',       highA:50,  highC:25, lowA:50,  lowC:25, kesRes:300,  veh:500},
+  {auth:'KWS',  name:'Kakamega N. Reserve',           highA:50,  highC:25, lowA:50,  lowC:25, kesRes:300,  veh:500},
+  {auth:'KWS',  name:'Chyulu Hills N. Park',          highA:40,  highC:20, lowA:40,  lowC:20, kesRes:300,  veh:500},
+  {auth:'KWS',  name:'Marsabit N. Park',              highA:40,  highC:20, lowA:40,  lowC:20, kesRes:300,  veh:500},
+  {auth:'KWS',  name:'Sibiloi N. Park',               highA:40,  highC:20, lowA:40,  lowC:20, kesRes:300,  veh:500},
+  {auth:'KWS',  name:'Saiwa Swamp N. Park',           highA:40,  highC:20, lowA:40,  lowC:20, kesRes:300,  veh:500},
+  {auth:'KWS',  name:'Ruma N. Park',                  highA:40,  highC:20, lowA:40,  lowC:20, kesRes:300,  veh:500},
+  {auth:'DSWT', name:'David Sheldrick Wildlife Trust',highA:20,  highC:5,  lowA:20,  lowC:5,  kesRes:250,  veh:0},
+];
+
+// ================================================================
+// STATE + PERSISTENCE (safe wrapper — works even in sandboxed iframes
+// like OneDrive / SharePoint / Google Drive previewers where
+// localStorage throws a SecurityError. Falls back to in-memory only,
+// and offers Backup/Restore JSON download so data can still persist
+// across sessions when the browser blocks storage.)
+// ================================================================
+const LS_KEYS = {
+  rates:   'scs_park_rates_v2',
+  history: 'scs_park_history_v2',
+  clients: 'scs_park_clients_v2',
+  counter: 'scs_park_counter_v2',
+};
+let STORAGE_OK = false;
+try {
+  const t = '__scs_test__';
+  window.localStorage.setItem(t, '1');
+  window.localStorage.removeItem(t);
+  STORAGE_OK = true;
+} catch (e) {
+  STORAGE_OK = false;
+  console.warn('localStorage unavailable — running in memory-only mode.', e && e.message);
+}
+const memStore = {};   // in-memory fallback
+const LS = {
+  get(k){
+    try { return STORAGE_OK ? window.localStorage.getItem(k) : (memStore[k] ?? null); }
+    catch(e){ return memStore[k] ?? null; }
+  },
+  set(k,v){
+    try { if(STORAGE_OK) window.localStorage.setItem(k,v); else memStore[k]=v; }
+    catch(e){ memStore[k]=v; }
+  },
+  remove(k){
+    try { if(STORAGE_OK) window.localStorage.removeItem(k); else delete memStore[k]; }
+    catch(e){ delete memStore[k]; }
+  }
+};
+function safeParse(str, fallback){
+  try { const v = JSON.parse(str); return v ?? fallback; } catch(e){ return fallback; }
+}
+let RATES   = safeParse(LS.get(LS_KEYS.rates),   null) || JSON.parse(JSON.stringify(DEFAULT_RATES));
+let HISTORY = safeParse(LS.get(LS_KEYS.history), []);
+let CLIENTS = safeParse(LS.get(LS_KEYS.clients), []);
+let COUNTER = parseInt(LS.get(LS_KEYS.counter)) || 1;
+
+// Show a persistent banner when running in a sandboxed preview so
+// the user understands why history won't persist and can act on it.
+if(!STORAGE_OK){
+  window.addEventListener('DOMContentLoaded', ()=>{
+    const bar = document.createElement('div');
+    bar.style.cssText = 'background:#fef3c7;color:#854d0e;padding:8px 14px;font-size:12px;border-bottom:1px solid #fde68a;text-align:center';
+    bar.innerHTML = '⚠️ <b>Preview mode</b> — this browser is blocking storage (typical inside OneDrive/SharePoint preview). Data will not persist after refresh. <b>Download the file and open it locally</b> (double-click) for full functionality, or use <b>Backup JSON</b> to save your work.';
+    document.body.insertBefore(bar, document.body.firstChild);
+  });
+}
+
+let entries = [];
+let approvals = {Ops:false, Vincent:false, Shalini:false};
+
+// ================================================================
+// TAB SWITCHING
+// ================================================================
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.tab')[{input:0,history:1,rates:2,clients:3,settings:4}[name]].classList.add('active');
+  if(name==='history') renderHistory();
+  if(name==='rates')   renderRates();
+  if(name==='clients') renderClients();
+  if(name==='settings') renderSettings();
+}
+
+// ================================================================
+// INIT
+// ================================================================
+function initParkDropdown(){
+  const sel = document.getElementById('park');
+  sel.innerHTML='';
+  RATES.forEach((r,i)=>{
+    const o = document.createElement('option');
+    o.value = i; o.textContent = `[${r.auth}] ${r.name}`;
+    sel.appendChild(o);
+  });
+}
+function autoNumber(){
+  const num = 'PV-2026-'+String(COUNTER).padStart(4,'0');
+  document.getElementById('voucherNo').value = num;
+}
+function todayIso(){ return new Date().toISOString().slice(0,10); }
+
+document.getElementById('datePrepared').value = todayIso();
+document.getElementById('travelDate').value   = todayIso();
+initParkDropdown();
+autoNumber();
+
+// ================================================================
+// SEASON + RATE HINTING
+// ================================================================
+function seasonOf(dateStr){
+  if(!dateStr) return 'HIGH';
+  const m = new Date(dateStr).getMonth()+1;
+  return (m>=7) ? 'HIGH' : 'LOW';
+}
+function updateHint(){
+  const r = RATES[document.getElementById('park').value];
+  if(!r) return;
+  const s = seasonOf(document.getElementById('travelDate').value);
+  const a = s==='HIGH' ? r.highA : r.lowA;
+  const c = s==='HIGH' ? r.highC : r.lowC;
+  document.getElementById('rateHint').innerHTML =
+    `<b>${s}</b> · Adult USD <b>$${a}</b> · Child USD <b>$${c}</b> · Resident KES <b>${r.kesRes.toLocaleString()}</b> · Vehicle KES <b>${r.veh.toLocaleString()}</b>`;
+  const badge = document.getElementById('seasonBadge');
+  badge.className = 'badge ' + (s==='HIGH'?'high':'low');
+  badge.textContent = s;
+}
+['park','travelDate'].forEach(id=>document.getElementById(id).addEventListener('change', updateHint));
+updateHint();
+
+// ================================================================
+// CLIENT AUTOCOMPLETE
+// ================================================================
+const clientInp = document.getElementById('client');
+const clientAc  = document.getElementById('clientAc');
+clientInp.addEventListener('input', ()=>{
+  const q = clientInp.value.toLowerCase().trim();
+  if(!q){ clientAc.classList.remove('show'); return; }
+  const matches = CLIENTS.filter(c=>c.name.toLowerCase().includes(q)).slice(0,8);
+  if(matches.length===0){ clientAc.classList.remove('show'); return; }
+  clientAc.innerHTML = matches.map(c=>`<div class="ac-item" onclick="pickClient('${c.name.replace(/'/g,"\\'")}')">${c.name}<div class="sub">${c.agent||''} ${c.notes?'· '+c.notes:''}</div></div>`).join('');
+  clientAc.classList.add('show');
+});
+clientInp.addEventListener('blur', ()=>setTimeout(()=>clientAc.classList.remove('show'), 200));
+function pickClient(name){
+  clientInp.value = name;
+  const c = CLIENTS.find(x=>x.name===name);
+  if(c && c.agent && !document.getElementById('consultant').value) document.getElementById('consultant').value = c.agent;
+  clientAc.classList.remove('show');
+}
+
+// ================================================================
+// ENTRY MANAGEMENT
+// ================================================================
+function addEntry(){
+  const r = RATES[document.getElementById('park').value];
+  const trav = document.getElementById('travelDate').value;
+  const s = seasonOf(trav);
+  const ad = +document.getElementById('adults').value||0;
+  const ch = +document.getElementById('children').value||0;
+  const veh = +document.getElementById('vehicles').value||0;
+  const days = +document.getElementById('days').value||1;
+  if(ad+ch+veh===0){ toast('Enter at least one Adult, Child or Vehicle.'); return; }
+  const rateA = s==='HIGH' ? r.highA : r.lowA;
+  const rateC = s==='HIGH' ? r.highC : r.lowC;
+  const usdTotal = (ad*rateA + ch*rateC) * days;
+  const kesTotal = (veh*r.veh) * days;
+  entries.push({
+    auth:r.auth, name:r.name, season:s,
+    client:document.getElementById('client').value||'',
+    invoice:document.getElementById('invoice').value||'',
+    travelDate:trav,
+    adults:ad, children:ch, vehicles:veh, days,
+    rateA, rateC, kesRes:r.kesRes, veh:r.veh,
+    usdTotal, kesTotal
+  });
+  // Clear line-specific inputs but keep client/invoice for next add
+  document.getElementById('adults').value=0;
+  document.getElementById('children').value=0;
+  document.getElementById('vehicles').value=0;
+  document.getElementById('days').value=1;
+  renderEntries();
+}
+function delEntry(i){ entries.splice(i,1); renderEntries(); }
+function clearEntries(){ entries=[]; renderEntries(); }
+
+function renderEntries(){
+  const wrap = document.getElementById('entries');
+  if(entries.length===0){
+    wrap.innerHTML=''; document.getElementById('summary').style.display='none'; return;
+  }
+  wrap.innerHTML = entries.map((e,i)=>`
+    <div class="entry">
+      <button class="del" onclick="delEntry(${i})">×</button>
+      <strong>${e.name}</strong> <span class="badge ${e.auth.toLowerCase()}">${e.auth}</span> <span class="badge ${e.season==='HIGH'?'high':'low'}">${e.season}</span><br>
+      ${e.client?e.client+' · ':''}${e.invoice?e.invoice+' · ':''}${e.travelDate||''}<br>
+      ${e.adults}Ad×$${e.rateA} + ${e.children}Ch×$${e.rateC} + ${e.vehicles}Veh×KES${e.veh} × ${e.days}d
+      = <b>$${e.usdTotal.toFixed(2)} · KES ${e.kesTotal.toLocaleString()}</b>
+    </div>`).join('');
+  updateSummary();
+}
+function updateSummary(){
+  const usd = entries.reduce((s,e)=>s+e.usdTotal,0);
+  const kes = entries.reduce((s,e)=>s+e.kesTotal,0);
+  const ecit = +document.getElementById('ecitKes').value||0;
+  const gate = +document.getElementById('gateKes').value||0;
+  const unutU = +document.getElementById('unutUsd').value||0;
+  const unutK = +document.getElementById('unutKes').value||0;
+  const totalUsd = usd;
+  const totalKes = kes + ecit + gate;
+  const nettUsd = totalUsd - unutU;
+  const nettKes = totalKes - unutK;
+  document.getElementById('summary').style.display='block';
+  document.getElementById('totalDisplay').textContent = `$${totalUsd.toFixed(2)} · KES ${totalKes.toLocaleString(undefined,{maximumFractionDigits:2})}`;
+  document.getElementById('nettDisplay').textContent  = `$${nettUsd.toFixed(2)} · KES ${nettKes.toLocaleString(undefined,{maximumFractionDigits:2})}`;
+}
+['ecitKes','gateKes','unutUsd','unutKes'].forEach(id=>document.getElementById(id).addEventListener('input', updateSummary));
+
+// ================================================================
+// APPROVAL LOCK STATUS
+// ================================================================
+function approve(role){
+  approvals[role] = !approvals[role];
+  refreshApprovalUi();
+}
+function refreshApprovalUi(){
+  document.getElementById('stepOps').className = 'step'+(approvals.Ops?' done':'');
+  document.getElementById('stepVin').className = 'step'+(approvals.Vincent?' done':'');
+  document.getElementById('stepSha').className = 'step'+(approvals.Shalini?' done':'');
+}
+
+// ================================================================
+// NUMBER TO WORDS
+// ================================================================
+function moneyWords(n){
+  const a=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const b=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  function tri(x){let s='';if(x>=100){s+=a[Math.floor(x/100)]+' Hundred ';x%=100;}if(x>=20){s+=b[Math.floor(x/10)]+' ';x%=10;}if(x>0)s+=a[x]+' ';return s.trim();}
+  const whole=Math.floor(n), cents=Math.round((n-whole)*100);
+  if(whole===0) return 'Zero US Dollars '+(cents?`and ${cents}/100`:'Only');
+  const units=['','Thousand','Million','Billion'];let parts=[],x=whole,idx=0;
+  while(x>0){const c=x%1000;if(c)parts.unshift(tri(c)+(units[idx]?' '+units[idx]:''));x=Math.floor(x/1000);idx++;}
+  return parts.join(' ')+' US Dollars '+(cents?`and ${cents}/100`:'Only');
+}
+
+// ================================================================
+// GENERATE VOUCHERS — one per authority
+// ================================================================
+function fmtKES(n){ return 'KES '+ (n||0).toLocaleString(undefined,{maximumFractionDigits:2,minimumFractionDigits:2}); }
+function fmtUSD(n){ return '$'  + (n||0).toLocaleString(undefined,{maximumFractionDigits:2,minimumFractionDigits:2}); }
+function fmtDate(iso){ if(!iso) return ''; const d=new Date(iso); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+
+const FLOAT_LABEL = {KWS:'KWS FLOAT', KAPS:'KAPS FLOAT A/C', KATO:'KATO FLOAT', DSWT:'DSWT FLOAT'};
+
+function buildVoucher(auth, lines, meta){
+  const usd = lines.reduce((s,e)=>s+e.usdTotal,0);
+  const kes = lines.reduce((s,e)=>s+e.kesTotal,0);
+  const ecit = meta.ecitKes, gate = meta.gateKes;
+  const totalUsd = usd;
+  const totalKes = kes + ecit + gate;
+  const nettUsd = totalUsd - meta.unutUsd;
+  const nettKes = totalKes - meta.unutKes;
+
+  const rows = lines.map(e=>`
+    <tr>
+      <td>${e.name}</td>
+      <td>${e.client||''}</td>
+      <td class="ctr">${e.invoice||''}</td>
+      <td class="ctr">${fmtDate(e.travelDate)}</td>
+      <td class="ctr">${e.adults}Ad / ${e.children}Ch / ${e.vehicles}Veh × ${e.days}d</td>
+      <td class="num">${fmtKES(e.kesTotal)}</td>
+      <td class="num">${fmtUSD(e.usdTotal)}</td>
+    </tr>`).join('');
+
+  return `
+  <div class="voucher">
+    <div class="v-header">
+      <div class="co">SOUTHERN CROSS SAFARIS</div>
+      <div class="addr">P.O. Box 24584, Nairobi &nbsp;·&nbsp; Tel: 884712-9 / Fax 884723, 884724 &nbsp;·&nbsp; Cell: 0720 518 888</div>
+    </div>
+    <div class="v-title">PARKFEES PAYMENT VOUCHER</div>
+    <div class="v-sub">${FLOAT_LABEL[auth]||auth}</div>
+
+    <div class="v-meta">
+      <div class="lbl">Voucher No:</div><div>${meta.voucherNo}</div>
+      <div class="lbl">Date:</div><div>${fmtDate(meta.datePrepared)}</div>
+      <div class="lbl">CHQ NO (USD):</div><div>${meta.chqUsd||'—'}</div>
+      <div class="lbl">USD Cheque Amt:</div><div>${fmtUSD(meta.chqUsdAmt)}</div>
+      <div class="lbl">CHQ NO (KES):</div><div>${meta.chqKes||'—'}</div>
+      <div class="lbl">KES Cheque Amt:</div><div>${fmtKES(meta.chqKesAmt)}</div>
+      <div class="lbl">Trip Ref:</div><div>${meta.tripRef||'—'}</div>
+      <div class="lbl">Method:</div><div>${meta.method}</div>
+    </div>
+
+    <div class="v-unut">
+      <b>LESS: Unutilised Tickets</b>
+      <div>Card No: <b>${meta.unutCard||'—'}</b></div>
+      <b>KES:</b><div>${fmtKES(meta.unutKes)}</div>
+      <b>USD:</b><div>${fmtUSD(meta.unutUsd)}</div>
+    </div>
+
+    <table class="v-tbl">
+      <thead>
+        <tr>
+          <th>Destination</th><th>Client Name</th><th>Invoice No</th><th>Travel Date</th>
+          <th>Pax / Vehicles × Days</th>
+          <th>R/Citizen + Vehicle KES</th><th>Non-Resident USD</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+        <tr class="subtotal"><td colspan="5" style="text-align:right">E-CITIZEN CHARGES</td><td class="num">${fmtKES(ecit)}</td><td class="num">—</td></tr>
+        <tr class="subtotal"><td colspan="5" style="text-align:right">GATEWAY FEES</td><td class="num">${fmtKES(gate)}</td><td class="num">—</td></tr>
+        <tr class="grand"><td colspan="5" style="text-align:right">TOTAL TICKETS TO ORDER</td><td class="num">${fmtKES(totalKes)}</td><td class="num">${fmtUSD(totalUsd)}</td></tr>
+        <tr class="nett"><td colspan="5" style="text-align:right">NETT AMOUNT PAYABLE BY CHEQUE</td><td class="num">${fmtKES(nettKes)}</td><td class="num">${fmtUSD(nettUsd)}</td></tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top:8px;font-style:italic;font-size:10.5px;color:var(--muted)">
+      <b>Amount in words:</b> ${moneyWords(nettUsd)}
+    </div>
+
+    <div class="sig">
+      <div>
+        <div class="role">PREPARED BY</div>
+        Vincent (Finance)<br>
+        ${approvals.Vincent?'<b style="color:var(--ok)">✓ Approved '+new Date().toLocaleDateString('en-GB')+'</b>':'Signature / Date'}
+      </div>
+      <div>
+        <div class="role">AUTHORISED BY</div>
+        Shalini<br>
+        ${approvals.Shalini?'<b style="color:var(--ok)">✓ Approved '+new Date().toLocaleDateString('en-GB')+'</b>':'Signature / Date'}
+      </div>
+      <div>
+        <div class="role">RECEIVED BY</div>
+        ${FLOAT_LABEL[auth]}<br>
+        Signature &amp; Stamp
+      </div>
+    </div>
+  </div>`;
+}
+
+function generate(){
+  if(entries.length===0){ toast('Add at least one destination line first.'); return; }
+  if(!document.getElementById('voucherNo').value) autoNumber();
+
+  const meta = {
+    voucherNo:    document.getElementById('voucherNo').value,
+    datePrepared: document.getElementById('datePrepared').value,
+    tripRef:      document.getElementById('tripRef').value,
+    consultant:   document.getElementById('consultant').value,
+    fx:          +document.getElementById('fx').value,
+    method:       document.getElementById('method').value,
+    chqUsd:       document.getElementById('chqUsd').value,
+    chqUsdAmt:   +document.getElementById('chqUsdAmt').value||0,
+    chqKes:       document.getElementById('chqKes').value,
+    chqKesAmt:   +document.getElementById('chqKesAmt').value||0,
+    unutCard:     document.getElementById('unutCard').value,
+    unutUsd:     +document.getElementById('unutUsd').value||0,
+    unutKes:     +document.getElementById('unutKes').value||0,
+    ecitKes:     +document.getElementById('ecitKes').value||0,
+    gateKes:     +document.getElementById('gateKes').value||0,
+  };
+
+  // Group entries by authority
+  const groups = {};
+  entries.forEach(e=>{ (groups[e.auth]=groups[e.auth]||[]).push(e); });
+
+  // For fees: apply to first voucher only (or all if user prefers — here to first)
+  const authKeys = Object.keys(groups);
+  const html = authKeys.map((auth,idx)=>{
+    const m = {...meta};
+    if(idx!==0){ m.ecitKes=0; m.gateKes=0; m.unutUsd=0; m.unutKes=0; m.unutCard=''; }
+    return buildVoucher(auth, groups[auth], m);
+  }).join('');
+
+  document.getElementById('output').innerHTML = html || '<div class="card"><div class="empty">No lines to render.</div></div>';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ================================================================
+// SAVE TO HISTORY
+// ================================================================
+function saveToHistory(){
+  if(entries.length===0){ toast('Add at least one line before saving.'); return; }
+  const usd = entries.reduce((s,e)=>s+e.usdTotal,0);
+  const kes = entries.reduce((s,e)=>s+e.kesTotal,0) +
+              (+document.getElementById('ecitKes').value||0) +
+              (+document.getElementById('gateKes').value||0);
+  const authorities = [...new Set(entries.map(e=>e.auth))].join(' + ');
+  const rec = {
+    id: Date.now(),
+    voucherNo: document.getElementById('voucherNo').value,
+    datePrepared: document.getElementById('datePrepared').value,
+    tripRef: document.getElementById('tripRef').value,
+    client: entries[0]?.client || '',
+    consultant: document.getElementById('consultant').value,
+    authorities,
+    method: document.getElementById('method').value,
+    chqUsd: document.getElementById('chqUsd').value,
+    chqKes: document.getElementById('chqKes').value,
+    totalUsd: usd,
+    totalKes: kes,
+    approvals: {...approvals},
+    entries: JSON.parse(JSON.stringify(entries)),
+    meta: {
+      chqUsdAmt: +document.getElementById('chqUsdAmt').value||0,
+      chqKesAmt: +document.getElementById('chqKesAmt').value||0,
+      unutCard: document.getElementById('unutCard').value,
+      unutUsd: +document.getElementById('unutUsd').value||0,
+      unutKes: +document.getElementById('unutKes').value||0,
+      ecitKes: +document.getElementById('ecitKes').value||0,
+      gateKes: +document.getElementById('gateKes').value||0,
+      fx: +document.getElementById('fx').value||129,
+    }
+  };
+  HISTORY.unshift(rec);
+  LS.set(LS_KEYS.history, JSON.stringify(HISTORY));
+
+  // Auto-save new client if provided
+  const cname = entries[0]?.client;
+  if(cname && !CLIENTS.find(c=>c.name.toLowerCase()===cname.toLowerCase())){
+    CLIENTS.push({name:cname, agent:document.getElementById('consultant').value||'', notes:''});
+    LS.set(LS_KEYS.clients, JSON.stringify(CLIENTS));
+  }
+
+  // Bump counter
+  COUNTER++;
+  LS.set(LS_KEYS.counter, COUNTER);
+
+  toast('✓ Saved to history · Voucher #'+rec.voucherNo);
+  if(CLOUD.mode==='auto' && CLOUD.url && CLOUD.key){ pushOne(rec); }
+}
+
+// ================================================================
+// HISTORY PAGE
+// ================================================================
+function renderHistory(){
+  const q = (document.getElementById('histSearch').value||'').toLowerCase();
+  const rows = HISTORY.filter(r=>{
+    if(!q) return true;
+    return (r.voucherNo+' '+r.client+' '+r.tripRef).toLowerCase().includes(q);
+  });
+  const tbody = document.getElementById('histBody');
+  const empty = document.getElementById('histEmpty');
+  if(rows.length===0){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = rows.map(r=>{
+    const app = ['Ops','Vincent','Shalini'].map(k=>r.approvals[k]?'<span style="color:var(--ok)">✓'+k[0]+'</span>':'<span style="color:#cbd5e1">·'+k[0]+'</span>').join(' ');
+    return `<tr>
+      <td>${fmtDate(r.datePrepared)}</td>
+      <td><b>${r.voucherNo}</b></td>
+      <td>${r.authorities}</td>
+      <td>${r.tripRef||'—'}</td>
+      <td>${r.client||'—'}</td>
+      <td>${r.method}</td>
+      <td class="ctr">${fmtUSD(r.totalUsd)}</td>
+      <td class="ctr">${fmtKES(r.totalKes)}</td>
+      <td>${app}</td>
+      <td class="act">
+        <button onclick="loadHistory(${r.id})">Reopen</button>
+        <button class="danger" onclick="delHistory(${r.id})">×</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function loadHistory(id){
+  const r = HISTORY.find(x=>x.id===id);
+  if(!r) return;
+  document.getElementById('voucherNo').value = r.voucherNo;
+  document.getElementById('datePrepared').value = r.datePrepared;
+  document.getElementById('tripRef').value = r.tripRef;
+  document.getElementById('consultant').value = r.consultant;
+  document.getElementById('method').value = r.method;
+  document.getElementById('chqUsd').value = r.chqUsd;
+  document.getElementById('chqKes').value = r.chqKes;
+  document.getElementById('chqUsdAmt').value = r.meta.chqUsdAmt;
+  document.getElementById('chqKesAmt').value = r.meta.chqKesAmt;
+  document.getElementById('unutCard').value = r.meta.unutCard;
+  document.getElementById('unutUsd').value = r.meta.unutUsd;
+  document.getElementById('unutKes').value = r.meta.unutKes;
+  document.getElementById('ecitKes').value = r.meta.ecitKes;
+  document.getElementById('gateKes').value = r.meta.gateKes;
+  document.getElementById('fx').value = r.meta.fx;
+  entries = JSON.parse(JSON.stringify(r.entries));
+  approvals = {...r.approvals};
+  renderEntries(); refreshApprovalUi();
+  showPage('input'); generate();
+  toast('Reopened '+r.voucherNo);
+}
+function delHistory(id){
+  if(!confirm('Delete this voucher from history?')) return;
+  HISTORY = HISTORY.filter(x=>x.id!==id);
+  LS.set(LS_KEYS.history, JSON.stringify(HISTORY));
+  renderHistory();
+}
+function clearHistory(){
+  if(!confirm('Clear ALL saved vouchers? This cannot be undone.')) return;
+  HISTORY = []; LS.set(LS_KEYS.history, JSON.stringify(HISTORY)); renderHistory();
+}
+function backupJson(){
+  const blob = new Blob([JSON.stringify({rates:RATES,history:HISTORY,clients:CLIENTS,counter:COUNTER},null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'park_fees_backup_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  toast('✓ Backup downloaded');
+}
+function restoreJson(ev){
+  const f = ev.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = e => {
+    try {
+      const d = JSON.parse(e.target.result);
+      if(d.rates)   { RATES=d.rates;     LS.set(LS_KEYS.rates,   JSON.stringify(RATES)); }
+      if(d.history) { HISTORY=d.history; LS.set(LS_KEYS.history, JSON.stringify(HISTORY)); }
+      if(d.clients) { CLIENTS=d.clients; LS.set(LS_KEYS.clients, JSON.stringify(CLIENTS)); }
+      if(d.counter) { COUNTER=d.counter; LS.set(LS_KEYS.counter, COUNTER); }
+      initParkDropdown(); renderHistory(); renderRates(); renderClients();
+      toast('✓ Restored from backup');
+    } catch(err){ toast('Invalid backup file'); }
+  };
+  rd.readAsText(f);
+  ev.target.value='';
+}
+
+// ================================================================
+// EXPORT CSV (accounting import)
+// ================================================================
+function exportCsv(){
+  if(HISTORY.length===0){ toast('No history to export.'); return; }
+  const rows = [['Date','Voucher No','Trip Ref','Client','Consultant','Authorities','Method','CHQ USD','CHQ KES','Total USD','Total KES','Ops OK','Vincent OK','Shalini OK']];
+  HISTORY.forEach(r=>rows.push([
+    r.datePrepared, r.voucherNo, r.tripRef, r.client, r.consultant, r.authorities, r.method,
+    r.chqUsd, r.chqKes, r.totalUsd.toFixed(2), r.totalKes.toFixed(2),
+    r.approvals.Ops?'Y':'N', r.approvals.Vincent?'Y':'N', r.approvals.Shalini?'Y':'N',
+  ]));
+  const csv = rows.map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'park_vouchers_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  toast('✓ Exported '+HISTORY.length+' rows');
+}
+
+// ================================================================
+// EMAIL APPROVER
+// ================================================================
+function emailApprover(){
+  if(entries.length===0){ toast('Generate a voucher first.'); return; }
+  const usd = entries.reduce((s,e)=>s+e.usdTotal,0);
+  const kes = entries.reduce((s,e)=>s+e.kesTotal,0)+(+document.getElementById('ecitKes').value||0)+(+document.getElementById('gateKes').value||0);
+  const vNo = document.getElementById('voucherNo').value;
+  const subject = encodeURIComponent(`Park Fees Voucher ${vNo} — approval requested`);
+  const body = encodeURIComponent(
+    `Hi Shalini,\n\nPlease approve the following park fees voucher:\n\n`+
+    `Voucher No: ${vNo}\nDate: ${document.getElementById('datePrepared').value}\nTrip Ref: ${document.getElementById('tripRef').value}\n`+
+    `Client: ${entries[0].client||'—'}\n\n`+
+    entries.map(e=>`• ${e.name}: ${e.adults}Ad+${e.children}Ch+${e.vehicles}Veh × ${e.days}d = ${fmtUSD(e.usdTotal)} · ${fmtKES(e.kesTotal)}`).join('\n')+
+    `\n\nTotal: ${fmtUSD(usd)} · ${fmtKES(kes)}\n\nKindly authorise so we can process payment.\n\nThank you.`
+  );
+  window.location.href = `mailto:shalini@southerncrosskenya.com?subject=${subject}&body=${body}`;
+}
+
+// ================================================================
+// NEW REQUISITION
+// ================================================================
+function newRequisition(){
+  if(entries.length && !confirm('Start a new requisition? Unsaved lines will be lost.')) return;
+  entries=[]; approvals={Ops:false,Vincent:false,Shalini:false};
+  ['tripRef','client','invoice','chqUsd','chqKes','unutCard'].forEach(id=>document.getElementById(id).value='');
+  ['chqUsdAmt','chqKesAmt','unutUsd','unutKes','ecitKes','gateKes'].forEach(id=>document.getElementById(id).value=0);
+  ['adults','children','vehicles'].forEach(id=>document.getElementById(id).value=0);
+  document.getElementById('days').value=1;
+  document.getElementById('datePrepared').value = todayIso();
+  document.getElementById('travelDate').value = todayIso();
+  autoNumber();
+  renderEntries(); refreshApprovalUi();
+  document.getElementById('output').innerHTML='<div class="card"><div class="empty">Ready for a new requisition.</div></div>';
+  toast('New requisition started');
+}
+
+// ================================================================
+// RATE CARDS PAGE
+// ================================================================
+function renderRates(){
+  const b = document.getElementById('rateBody');
+  b.innerHTML = RATES.map((r,i)=>`
+    <tr>
+      <td><span class="badge ${r.auth.toLowerCase()}">${r.auth}</span></td>
+      <td class="park">${r.name}</td>
+      <td><input type="number" value="${r.highA}" onchange="RATES[${i}].highA=+this.value"></td>
+      <td><input type="number" value="${r.highC}" onchange="RATES[${i}].highC=+this.value"></td>
+      <td><input type="number" value="${r.lowA}"  onchange="RATES[${i}].lowA=+this.value"></td>
+      <td><input type="number" value="${r.lowC}"  onchange="RATES[${i}].lowC=+this.value"></td>
+      <td><input type="number" value="${r.kesRes}" onchange="RATES[${i}].kesRes=+this.value"></td>
+      <td><input type="number" value="${r.veh}"    onchange="RATES[${i}].veh=+this.value"></td>
+    </tr>`).join('');
+}
+function saveRates(){
+  LS.set(LS_KEYS.rates, JSON.stringify(RATES));
+  initParkDropdown(); updateHint();
+  toast('✓ Rate cards saved');
+}
+function resetRates(){
+  if(!confirm('Reset all rates to defaults from PARK FEES.xlsx?')) return;
+  RATES = JSON.parse(JSON.stringify(DEFAULT_RATES));
+  LS.set(LS_KEYS.rates, JSON.stringify(RATES));
+  renderRates(); initParkDropdown(); updateHint();
+  toast('Reset to defaults');
+}
+
+// ================================================================
+// CLIENT PAGE
+// ================================================================
+function renderClients(){
+  const b = document.getElementById('clientBody');
+  if(CLIENTS.length===0){ b.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">No clients yet. Add one above or save a voucher to auto-add.</td></tr>'; return; }
+  b.innerHTML = CLIENTS.map((c,i)=>`
+    <tr>
+      <td><b>${c.name}</b></td>
+      <td>${c.agent||'—'}</td>
+      <td>${c.notes||'—'}</td>
+      <td class="act"><button class="danger" onclick="delClient(${i})">×</button></td>
+    </tr>`).join('');
+}
+function addClient(){
+  const n = document.getElementById('ncName').value.trim();
+  if(!n){ toast('Enter a client name.'); return; }
+  CLIENTS.push({name:n, agent:document.getElementById('ncAgent').value, notes:document.getElementById('ncNotes').value});
+  LS.set(LS_KEYS.clients, JSON.stringify(CLIENTS));
+  document.getElementById('ncName').value='';document.getElementById('ncAgent').value='';document.getElementById('ncNotes').value='';
+  renderClients();
+}
+function delClient(i){
+  if(!confirm('Remove '+CLIENTS[i].name+'?')) return;
+  CLIENTS.splice(i,1);
+  LS.set(LS_KEYS.clients, JSON.stringify(CLIENTS));
+  renderClients();
+}
+function clearClients(){
+  if(!confirm('Delete ALL saved clients?')) return;
+  CLIENTS=[]; LS.set(LS_KEYS.clients, JSON.stringify(CLIENTS)); renderClients();
+}
+
+// ================================================================
+// TOAST
+// ================================================================
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._to);
+  t._to = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+
+// ================================================================
+// CLOUD SYNC — Google Apps Script backend
+// ================================================================
+const CLOUD_KEYS = { url:'scs_cloud_url', key:'scs_cloud_key', mode:'scs_cloud_mode', user:'scs_cloud_user' };
+let CLOUD = {
+  url:  LS.get(CLOUD_KEYS.url)  || '',
+  key:  LS.get(CLOUD_KEYS.key)  || '',
+  mode: LS.get(CLOUD_KEYS.mode) || 'auto',
+  user: LS.get(CLOUD_KEYS.user) || '',
+};
+
+function cloudLog(msg, ok){
+  const el = document.getElementById('cloudLog');
+  if(!el) return;
+  const line = (ok===true?'✓ ':ok===false?'✗ ':'• ')+new Date().toLocaleTimeString('en-GB')+' '+msg+'\n';
+  el.textContent = line + el.textContent;
+}
+function cloudBadge(){
+  const b = document.getElementById('syncBadge');
+  if(!b) return;
+  if(CLOUD.mode==='off' || !CLOUD.url){
+    b.textContent = '🔌 Cloud sync: off'; b.style.color = '#fde68a';
+  } else if(CLOUD.mode==='manual'){
+    b.textContent = '📥 Cloud sync: manual ('+(CLOUD.user||'anon')+')'; b.style.color = '#fef3c7';
+  } else {
+    b.textContent = '🟢 Cloud sync: auto ('+(CLOUD.user||'anon')+')'; b.style.color = '#a7f3d0';
+  }
+}
+
+function renderSettings(){
+  document.getElementById('cloudUrl').value  = CLOUD.url;
+  document.getElementById('cloudKey').value  = CLOUD.key;
+  document.getElementById('cloudMode').value = CLOUD.mode;
+  document.getElementById('cloudUser').value = CLOUD.user;
+}
+function saveCloudConfig(){
+  CLOUD.url  = document.getElementById('cloudUrl').value.trim();
+  CLOUD.key  = document.getElementById('cloudKey').value.trim();
+  CLOUD.mode = document.getElementById('cloudMode').value;
+  CLOUD.user = document.getElementById('cloudUser').value.trim();
+  LS.set(CLOUD_KEYS.url,  CLOUD.url);
+  LS.set(CLOUD_KEYS.key,  CLOUD.key);
+  LS.set(CLOUD_KEYS.mode, CLOUD.mode);
+  LS.set(CLOUD_KEYS.user, CLOUD.user);
+  cloudBadge(); toast('✓ Cloud settings saved');
+  cloudLog('Settings saved (mode='+CLOUD.mode+')');
+}
+
+// Apps Script Web Apps do NOT accept custom headers or arbitrary JSON POST
+// (they always trigger a CORS preflight). The reliable pattern is a plain
+// text/plain POST with the JSON in the body — the script parses it via
+// e.postData.contents. GET is used for pull.
+async function cloudCall(action, payload){
+  if(!CLOUD.url) throw new Error('Cloud URL not configured');
+  if(!CLOUD.key) throw new Error('Sync Key not configured');
+  const body = JSON.stringify({ action, key: CLOUD.key, user: CLOUD.user||'anon', payload: payload||null });
+  const res = await fetch(CLOUD.url, {
+    method: 'POST',
+    body: body,
+    // Deliberately NO custom Content-Type — this keeps the request "simple"
+    // and avoids the CORS preflight that Apps Script cannot answer.
+    redirect: 'follow'
+  });
+  const text = await res.text();
+  let json;
+  try { json = JSON.parse(text); }
+  catch(e){ throw new Error('Bad response from cloud: '+text.slice(0,120)); }
+  if(json.error) throw new Error(json.error);
+  return json;
+}
+
+async function testCloud(){
+  cloudLog('Testing connection...');
+  try {
+    const r = await cloudCall('ping', null);
+    cloudLog('Connected. Sheet: '+(r.sheet||'ok')+' · rows: '+(r.rows??'?'), true);
+    toast('✓ Cloud connected');
+  } catch(e){
+    cloudLog('FAILED: '+e.message, false);
+    toast('✗ Cloud test failed — see log');
+  }
+}
+
+async function pushOne(rec){
+  if(CLOUD.mode==='off' || !CLOUD.url) return;
+  try {
+    await cloudCall('push', rec);
+    cloudLog('Pushed '+rec.voucherNo, true);
+  } catch(e){
+    cloudLog('Push failed for '+rec.voucherNo+': '+e.message, false);
+  }
+}
+
+async function pushAllToCloud(){
+  if(!CLOUD.url){ toast('Set URL first'); return; }
+  cloudLog('Pushing '+HISTORY.length+' records...');
+  let ok=0, fail=0;
+  for(const r of HISTORY){
+    try { await cloudCall('push', r); ok++; }
+    catch(e){ fail++; cloudLog('Fail '+r.voucherNo+': '+e.message, false); }
+  }
+  cloudLog('Pushed '+ok+' · Failed '+fail, fail===0);
+  toast('Pushed '+ok+'/'+(ok+fail));
+}
+
+async function pullFromCloud(){
+  if(!CLOUD.url){ toast('Set URL first'); return; }
+  cloudLog('Pulling shared history...');
+  try {
+    const r = await cloudCall('pull', null);
+    const remote = r.records || [];
+    // Merge by voucherNo (remote wins on conflict)
+    const byNo = {};
+    HISTORY.forEach(x=>byNo[x.voucherNo]=x);
+    remote.forEach(x=>byNo[x.voucherNo]=x);
+    HISTORY = Object.values(byNo).sort((a,b)=>(b.datePrepared||'').localeCompare(a.datePrepared||''));
+    LS.set(LS_KEYS.history, JSON.stringify(HISTORY));
+    renderHistory();
+    cloudLog('Pulled '+remote.length+' records (total now: '+HISTORY.length+')', true);
+    toast('✓ Pulled '+remote.length+' records');
+  } catch(e){
+    cloudLog('Pull failed: '+e.message, false);
+    toast('✗ Pull failed — see log');
+  }
+}
+
+// Auto-pull on load if configured
+window.addEventListener('load', ()=>{
+  cloudBadge();
+  if(CLOUD.mode==='auto' && CLOUD.url && CLOUD.key){
+    pullFromCloud().catch(()=>{});
+  }
+});
+
+// Initial paint
+renderEntries();
+refreshApprovalUi();
+</script>
+</body>
+</html>
